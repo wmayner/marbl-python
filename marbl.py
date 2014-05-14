@@ -21,11 +21,42 @@ blankets in Bayesian networks.
 It provides objects and methods for serializing and hashing **Marbls** (Markov
 blankets normalized per the Marbl spec), and unordered collections of them.
 
+
+Usage
+~~~~~
+
 Transition probability matrices are represented as ``p``-dimensional nested
-lists of floats, where ``p`` is the number of the node's parents. This makes
+lists of floats, where ``p`` is the number of the node's parents (this makes
 lexicographic sorting trivial, since lists are natively sorted
 lexicographically, though at the cost of overhead in the conversion between
-NumPy array and Python list form.
+NumPy array and Python list form).
+
+Normalization
+``````````````
+A :class:`Marbl` represents the normal form of a Markov blanket. Its TPMs are
+normalized upon initialization.
+
+A :class:`MarblSet` is similarly used to represent the normal form of an
+unordered collection of Marbls.
+
+If you need to get the normal form of a single TPM, rather than an entire
+Markov blanket, use :func:`normalize_tpm`.
+
+Hashing
+```````
+Just use the native Python ``hash`` function on Marbls and MarblSets.
+
+Serialization
+`````````````
+Both the Marbls and MarblSets can be serialized with :func:`pack`. Each object
+also has its own ``pack()`` method.
+
+To deserialize, use :func:`unpack` for Marbls, and :func:`unpack_set` for
+MarblSets.
+
+
+API
+~~~
 """
 
 from itertools import permutations
@@ -51,7 +82,7 @@ class Marbl():
     """
 
     def __init__(self, node_tpm, child_list, already_normalized=False):
-        """Initialize a Marbl.
+        """Marbls are rendered into normal form upon initialization.
 
         Args:
             node_tpm (list): The un-normalized node's TPM.
