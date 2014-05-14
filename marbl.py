@@ -239,10 +239,7 @@ class MarblSet(collections.abc.Set):
         return msgpack.packb(self._list)
 
     def __repr__(self):
-        return ''.join(('MarblSet([',
-                        ''.join('Marbl(' + str(m) + '), \n' for m in
-                                self._marbls),
-                        '])'))
+        return 'MarblSet([' + ''.join(str(m) for m in self.marbls) + '])'
 
     def __str__(self):
         return repr(self)
