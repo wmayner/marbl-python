@@ -279,8 +279,12 @@ def normalize_tpm(tpm):
         ...         [0.1, 0.3]],
         ...        [[0.4, 0.5],
         ...         [0.3, 0.1]]]
-        >>> normalize_tpm(tpm)
-        [[[0.3, 0.1], [0.4, 0.3]], [[0.4, 0.3], [0.5, 0.1]]]
+        >>> equivalent = [[[0.3, 0.1],
+        ...                [0.4, 0.3]],
+        ...               [[0.4, 0.3],
+        ...                [0.5, 0.1]]]
+        >>> normalize_tpm(tpm) == normalize_tpm(equivalent)
+        True
     """
     # Convert to a NumPy float array
     tpm = np.array(tpm).astype(float)
