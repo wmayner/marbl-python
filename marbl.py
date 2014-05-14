@@ -111,7 +111,7 @@ class Marbl():
 
     @property
     def child_list(self):
-        return self._list[1:]
+        return self._list[1]
 
     def __eq__(self, other):
         return self._list == other._list
