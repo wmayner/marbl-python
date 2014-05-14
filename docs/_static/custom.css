@@ -1,12 +1,14 @@
 @import url(http://fonts.googleapis.com/css?family=Droid+Sans+Mono|Open+Sans:300,400,700);
-.wy-nav-content-wrap {
-    margin-left: 0;
-}
-nav, .rubric {
-    display: none;
-}
 body {
     font-family: 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+h1 {
+    font-size: 200%;
+}
+h2 {
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 10px;
+    font-size: 170%;
 }
 .rst-content dl:not(.docutils) tt.descname,
 .rst-content dl:not(.docutils) tt.descclassname,
@@ -40,4 +42,7 @@ em, .docutils.literal {
 }
 .rst-content dl:not(.docutils) dt {
     margin-bottom: 15px;
+}
+.wy-nav-top i {
+    margin-top: 9px;
 }
