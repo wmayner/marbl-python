@@ -24,7 +24,7 @@ module.exports = (grunt) ->
           stdout: true
           failOnError: true
       uploadDocs:
-        command: "python setup.py upload_docs --upload_dir docs/_build/html"
+        command: "python setup.py upload_docs --upload-dir docs/_build/html"
         options:
           stdout: true
           failOnError: true
