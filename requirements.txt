@@ -1,0 +1,19 @@
+# Install requires
+msgpack-python==0.4.2
+numpy==1.8.1
+
+# Tests require
+pytest==2.5.2
+coverage==3.7.1
+
+# Docs require
+Sphinx==1.2.2
+sphinxcontrib-napoleon==0.2.7
+sphinx-rtd-theme==0.1.6
+
+## Nested dependencies
+Jinja2==2.7.2
+MarkupSafe==0.23
+Pygments==1.6
+docutils==0.11
+py==1.4.20

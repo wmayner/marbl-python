@@ -1,0 +1,2 @@
+.. automodule:: marbl
+    :members:
