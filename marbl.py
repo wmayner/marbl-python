@@ -302,7 +302,7 @@ def normalize_tpm(tpm):
 
 
 __title__ = 'marbl'
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 __description__ = ('An implementation of the Marbl specification for '
                    'normalized representations of Markov blankets in Bayesian '
                    'networks.')
