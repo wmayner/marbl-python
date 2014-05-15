@@ -194,7 +194,7 @@ class MarblSet(collections.abc.Set):
         # The underlying representation is a list of Marbl TPMS ordered
         # lexicographically, per the Marbl spec.
         self.marbls = list(marbls)
-        self._list = [b._list for b in sorted(marbls)]
+        self._list = [b._list for b in sorted(self.marbls)]
 
     def __contains__(self, x):
         return x in self.marbls
