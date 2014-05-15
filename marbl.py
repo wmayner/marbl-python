@@ -78,15 +78,15 @@ class Marbl():
         node_tpm (list): The covered node's ``p``-dimensional transition
             probability matrix (where ``p`` is the number of the node's
             parents).
-        child_list (list): A list of the TPMs of the node's children.
+        child_tpms (list): A list of the TPMs of the node's children.
     """
 
-    def __init__(self, node_tpm, child_list, already_normalized=False):
+    def __init__(self, node_tpm, child_tpms, already_normalized=False):
         """Marbls are rendered into normal form upon initialization.
 
         Args:
             node_tpm (list): The un-normalized node's TPM.
-            child_list (list): The list of un-normalized child TPMs.
+            child_tpms (Iterable): The list of un-normalized child TPMs.
 
         Keyword Args:
             already_normalized (bool): Flag to indicate TPMs have already been
@@ -97,20 +97,22 @@ class Marbl():
             to differ when they shouldn't. Make sure everything really is
             already normalized.
         """
+        # Cast Iterable to list
+        child_tpms = list(child_tpms)
         # The underlying representation is the covered node's normalized TPM
         # followed by the normalized TPMs of its children, per the Marbl spec.
         if already_normalized:
-            self._list = [node_tpm, child_list]
+            self._list = [node_tpm, child_tpms]
         else:
             self._list = [normalize_tpm(node_tpm), [normalize_tpm(tpm) for tpm
-                                                    in child_list]]
+                                                    in child_tpms]]
 
     @property
     def node_tpm(self):
         return self._list[0]
 
     @property
-    def child_list(self):
+    def child_tpms(self):
         return self._list[1]
 
     def __eq__(self, other):
@@ -132,8 +134,8 @@ class Marbl():
             ...         [0.1, 0.3]],
             ...        [[0.4, 0.5],
             ...         [0.3, 0.1]]]
-            >>> child_list = [tpm, tpm]
-            >>> marbl = Marbl(tpm, child_list)
+            >>> child_tpms = [tpm, tpm]
+            >>> marbl = Marbl(tpm, child_tpms)
             >>> hash(marbl)
             298130924531334252
         """
@@ -147,8 +149,8 @@ class Marbl():
             ...         [0.1, 0.3]],
             ...        [[0.4, 0.5],
             ...         [0.3, 0.1]]]
-            >>> child_list = [tpm]
-            >>> marbl = Marbl(tpm, child_list)
+            >>> child_tpms = [tpm]
+            >>> marbl = Marbl(tpm, child_tpms)
             >>> marbl.pack()
             b'\\x92\\x92\\x92\\x92\\xcb?\\xd3333333\\xcb?\\xb9\\x99\\x99\\x99\\x99\\x99\\x9a\\x92\\xcb?\\xd9\\x99\\x99\\x99\\x99\\x99\\x9a\\xcb?\\xd3333333\\x92\\x92\\xcb?\\xd9\\x99\\x99\\x99\\x99\\x99\\x9a\\xcb?\\xd3333333\\x92\\xcb?\\xe0\\x00\\x00\\x00\\x00\\x00\\x00\\xcb?\\xb9\\x99\\x99\\x99\\x99\\x99\\x9a\\x91\\x92\\x92\\x92\\xcb?\\xd3333333\\xcb?\\xb9\\x99\\x99\\x99\\x99\\x99\\x9a\\x92\\xcb?\\xd9\\x99\\x99\\x99\\x99\\x99\\x9a\\xcb?\\xd3333333\\x92\\x92\\xcb?\\xd9\\x99\\x99\\x99\\x99\\x99\\x9a\\xcb?\\xd3333333\\x92\\xcb?\\xe0\\x00\\x00\\x00\\x00\\x00\\x00\\xcb?\\xb9\\x99\\x99\\x99\\x99\\x99\\x9a'
         """
@@ -157,7 +159,7 @@ class Marbl():
 
     def __repr__(self):
         return ''.join(('Marbl(', str(self.node_tpm), ', \n',
-                        str(self.child_list), ')'))
+                        str(self.child_tpms), ')'))
 
     def __str__(self):
         return repr(self)
@@ -171,8 +173,8 @@ def unpack(packed_marbl):
         ...         [0.1, 0.3]],
         ...        [[0.4, 0.5],
         ...         [0.3, 0.1]]]
-        >>> child_list = [tpm, tpm]
-        >>> marbl = Marbl(tpm, child_list)
+        >>> child_tpms = [tpm, tpm]
+        >>> marbl = Marbl(tpm, child_tpms)
         >>> marbl == unpack(pack(marbl))
         True
     """
@@ -216,8 +218,8 @@ class MarblSet(collections.abc.Set):
             ...         [0.1, 0.3]],
             ...        [[0.4, 0.5],
             ...         [0.3, 0.1]]]
-            >>> child_list = [tpm, tpm]
-            >>> marbl = Marbl(tpm, child_list)
+            >>> child_tpms = [tpm, tpm]
+            >>> marbl = Marbl(tpm, child_tpms)
             >>> marbls = MarblSet([marbl]*3)
             >>> hash(marbls)
             1023294637097056353
@@ -230,8 +232,8 @@ class MarblSet(collections.abc.Set):
         Example:
             >>> tpm = [[0.3, 0.4],
             ...        [0.1, 0.3]]
-            >>> child_list = [tpm]
-            >>> marbl = Marbl(tpm, child_list)
+            >>> child_tpms = [tpm]
+            >>> marbl = Marbl(tpm, child_tpms)
             >>> marbls = MarblSet([marbl]*2)
             >>> marbls.pack()
             b'\\x92\\x92\\x92\\x92\\xcb?\\xd3333333\\xcb?\\xb9\\x99\\x99\\x99\\x99\\x99\\x9a\\x92\\xcb?\\xd9\\x99\\x99\\x99\\x99\\x99\\x9a\\xcb?\\xd3333333\\x91\\x92\\x92\\xcb?\\xd3333333\\xcb?\\xb9\\x99\\x99\\x99\\x99\\x99\\x9a\\x92\\xcb?\\xd9\\x99\\x99\\x99\\x99\\x99\\x9a\\xcb?\\xd3333333\\x92\\x92\\x92\\xcb?\\xd3333333\\xcb?\\xb9\\x99\\x99\\x99\\x99\\x99\\x9a\\x92\\xcb?\\xd9\\x99\\x99\\x99\\x99\\x99\\x9a\\xcb?\\xd3333333\\x91\\x92\\x92\\xcb?\\xd3333333\\xcb?\\xb9\\x99\\x99\\x99\\x99\\x99\\x9a\\x92\\xcb?\\xd9\\x99\\x99\\x99\\x99\\x99\\x9a\\xcb?\\xd3333333'
