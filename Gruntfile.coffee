@@ -65,6 +65,7 @@ module.exports = (grunt) ->
   ]
   grunt.registerTask "docs", [
     "shell:openDocs"
+    "shell:buildDocs"
     "watch:docs"
   ]
   grunt.registerTask "uploaddocs", [
