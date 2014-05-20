@@ -13,18 +13,18 @@ with open('README.rst') as f:
 
 
 install_requires = [
-    'msgpack-python==0.4.2',
-    'numpy==1.8.1'
+    'msgpack-python >=0.4.2, <1.0.0',
+    'numpy >=1.8.1, <2.0.0'
 ]
 tests_require = [
-    'pytest==2.5.2',
-    'coverage==3.7.1'
+    'pytest',
+    'coverage'
 ]
 
 
 setup(
     name="marbl-python",
-    version='0.0.2',
+    version='1.0.0',
     description=('A Python implementation of the Marbl specification for '
                  'normalized representations of Markov blankets in Bayesian '
                  'networks.'),
@@ -35,7 +35,6 @@ setup(
     include_package_data=True,
     install_requires=install_requires,
     tests_require=tests_require,
-    test_suite="py.test",
     py_modules=['marbl'],
     package_data={'': ['LICENSE']},
     license='GNU General Public License v3.0',
