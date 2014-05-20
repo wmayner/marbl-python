@@ -75,18 +75,24 @@ class Marbl():
     Provides methods for serialization and hashing.
 
     Attributes:
-        node_tpm (list): The covered node's ``p``-dimensional transition
-            probability matrix (where ``p`` is the number of the node's
-            parents).
-        child_tpms (list): A list of the TPMs of the node's children.
+        node_tpm (list): The normal form of the covered node's
+            ``p``-dimensional transition probability matrix (where ``p`` is the
+            number of the node's parents).
+        augmented_child_tpms (list): The normalized augmented child tpms. A
+            normalized augmented child TPM contains the index of the dimension
+            corresponding to the covered node in the child's normalized TPM,
+            and the normalized TPM itself.
     """
 
-    def __init__(self, node_tpm, child_tpms, already_normalized=False):
+    def __init__(self, node_tpm, augmented_child_tpms,
+                 already_normalized=False):
         """Marbls are rendered into normal form upon initialization.
 
         Args:
             node_tpm (list): The un-normalized node's TPM.
-            child_tpms (Iterable): The list of un-normalized child TPMs.
+            augmented_child_tpms (Iterable): Each augmented child TPM contains
+                the index of the dimension corresponding to the covered node in
+                the child's TPM, and the TPM itself.
 
         Keyword Args:
             already_normalized (bool): Flag to indicate TPMs have already been
@@ -96,23 +102,45 @@ class Marbl():
             Incorrect use of the ``already_normalized`` flag can cause hashes
             to differ when they shouldn't. Make sure everything really is
             already normalized.
+
+        Examples:
+            >>> tpm = [[[0.3, 0.4],
+            ...         [0.1, 0.3]],
+            ...        [[0.4, 0.5],
+            ...         [0.3, 0.1]]]
+            >>> tpm2 = [[[0.3, 0.1],
+            ...          [0.4, 0.3]],
+            ...         [[0.4, 0.3],
+            ...          [0.5, 0.1]]]
+            >>> augmented_child_tpms = [[0, tpm], [0, tpm]]
+            >>> marbl1 = Marbl(tpm, augmented_child_tpms)
+            >>> marbl2 = Marbl(tpm2, augmented_child_tpms)
+            >>> marbl1 == marbl2
+            True
+            >>> augmented_child_tpms2 = [[0, tpm], [1, tpm]]
+            >>> marbl2 = Marbl(tpm, augmented_child_tpms2)
+            >>> marbl1 == marbl2
+            False
         """
         # Cast Iterable to list
-        child_tpms = list(child_tpms)
+        augmented_child_tpms = list(augmented_child_tpms)
         # The underlying representation is the covered node's normalized TPM
         # followed by the normalized TPMs of its children, per the Marbl spec.
         if already_normalized:
-            self._list = [node_tpm, child_tpms]
+            self._list = [node_tpm, augmented_child_tpms]
         else:
-            self._list = [normalize_tpm(node_tpm), [normalize_tpm(tpm) for tpm
-                                                    in child_tpms]]
+            self._list = [
+                normalize_tpm(node_tpm),
+                [normalize_tpm(tpm, track_parent_index=covered_node_index) for
+                 covered_node_index, tpm in augmented_child_tpms]
+            ]
 
     @property
     def node_tpm(self):
         return self._list[0]
 
     @property
-    def child_tpms(self):
+    def augmented_child_tpms(self):
         return self._list[1]
 
     def __eq__(self, other):
@@ -134,10 +162,10 @@ class Marbl():
             ...         [0.1, 0.3]],
             ...        [[0.4, 0.5],
             ...         [0.3, 0.1]]]
-            >>> child_tpms = [tpm, tpm]
-            >>> marbl = Marbl(tpm, child_tpms)
+            >>> augmented_child_tpms = [[0, tpm], [1, tpm]]
+            >>> marbl = Marbl(tpm, augmented_child_tpms)
             >>> hash(marbl)
-            298130924531334252
+            482032824703719516
         """
         return int(hashlib.sha1(self.pack()).hexdigest(), 16)
 
@@ -149,17 +177,17 @@ class Marbl():
             ...         [0.1, 0.3]],
             ...        [[0.4, 0.5],
             ...         [0.3, 0.1]]]
-            >>> child_tpms = [tpm]
-            >>> marbl = Marbl(tpm, child_tpms)
+            >>> augmented_child_tpms = [[0, tpm]]
+            >>> marbl = Marbl(tpm, augmented_child_tpms)
             >>> marbl.pack()
-            b'\\x92\\x92\\x92\\x92\\xcb?\\xd3333333\\xcb?\\xb9\\x99\\x99\\x99\\x99\\x99\\x9a\\x92\\xcb?\\xd9\\x99\\x99\\x99\\x99\\x99\\x9a\\xcb?\\xd3333333\\x92\\x92\\xcb?\\xd9\\x99\\x99\\x99\\x99\\x99\\x9a\\xcb?\\xd3333333\\x92\\xcb?\\xe0\\x00\\x00\\x00\\x00\\x00\\x00\\xcb?\\xb9\\x99\\x99\\x99\\x99\\x99\\x9a\\x91\\x92\\x92\\x92\\xcb?\\xd3333333\\xcb?\\xb9\\x99\\x99\\x99\\x99\\x99\\x9a\\x92\\xcb?\\xd9\\x99\\x99\\x99\\x99\\x99\\x9a\\xcb?\\xd3333333\\x92\\x92\\xcb?\\xd9\\x99\\x99\\x99\\x99\\x99\\x9a\\xcb?\\xd3333333\\x92\\xcb?\\xe0\\x00\\x00\\x00\\x00\\x00\\x00\\xcb?\\xb9\\x99\\x99\\x99\\x99\\x99\\x9a'
+            b'\\x92\\x92\\x92\\x92\\xcb?\\xd3333333\\xcb?\\xb9\\x99\\x99\\x99\\x99\\x99\\x9a\\x92\\xcb?\\xd9\\x99\\x99\\x99\\x99\\x99\\x9a\\xcb?\\xd3333333\\x92\\x92\\xcb?\\xd9\\x99\\x99\\x99\\x99\\x99\\x9a\\xcb?\\xd3333333\\x92\\xcb?\\xe0\\x00\\x00\\x00\\x00\\x00\\x00\\xcb?\\xb9\\x99\\x99\\x99\\x99\\x99\\x9a\\x91\\x92\\x00\\x92\\x92\\x92\\xcb?\\xd3333333\\xcb?\\xb9\\x99\\x99\\x99\\x99\\x99\\x9a\\x92\\xcb?\\xd9\\x99\\x99\\x99\\x99\\x99\\x9a\\xcb?\\xd3333333\\x92\\x92\\xcb?\\xd9\\x99\\x99\\x99\\x99\\x99\\x9a\\xcb?\\xd3333333\\x92\\xcb?\\xe0\\x00\\x00\\x00\\x00\\x00\\x00\\xcb?\\xb9\\x99\\x99\\x99\\x99\\x99\\x9a'
         """
         # Pack it up, pack it in
         return msgpack.packb(self._list)
 
     def __repr__(self):
         return ''.join(('Marbl(', str(self.node_tpm), ', \n',
-                        str(self.child_tpms), ')'))
+                        str(self.augmented_child_tpms), ')'))
 
     def __str__(self):
         return repr(self)
@@ -173,8 +201,8 @@ def unpack(packed_marbl):
         ...         [0.1, 0.3]],
         ...        [[0.4, 0.5],
         ...         [0.3, 0.1]]]
-        >>> child_tpms = [tpm, tpm]
-        >>> marbl = Marbl(tpm, child_tpms)
+        >>> augmented_child_tpms = [[0, tpm], [1, tpm]]
+        >>> marbl = Marbl(tpm, augmented_child_tpms)
         >>> marbl == unpack(pack(marbl))
         True
     """
@@ -193,6 +221,19 @@ class MarblSet(collections.abc.Set):
     """
 
     def __init__(self, marbls, already_normalized=False):
+        """
+        Args:
+            marbls (Iterable): The Marbls to include in the set.
+
+        Keyword Args:
+            already_normalized (bool): Flag to indicate TPMs have already been
+                normalized. Defaults to ``False``.
+
+        Warning:
+            Incorrect use of the ``already_normalized`` flag can cause hashes
+            to differ when they shouldn't. Make sure everything really is
+            already normalized.
+        """
         # The underlying representation is a list of Marbl TPMS ordered
         # lexicographically, per the Marbl spec.
         self.marbls = list(marbls)
@@ -218,11 +259,11 @@ class MarblSet(collections.abc.Set):
             ...         [0.1, 0.3]],
             ...        [[0.4, 0.5],
             ...         [0.3, 0.1]]]
-            >>> child_tpms = [tpm, tpm]
-            >>> marbl = Marbl(tpm, child_tpms)
+            >>> augmented_child_tpms = [[0, tpm], [1, tpm]]
+            >>> marbl = Marbl(tpm, augmented_child_tpms)
             >>> marbls = MarblSet([marbl]*3)
             >>> hash(marbls)
-            1023294637097056353
+            170586149808347817
         """
         return int(hashlib.sha1(self.pack()).hexdigest(), 16)
 
@@ -232,11 +273,11 @@ class MarblSet(collections.abc.Set):
         Example:
             >>> tpm = [[0.3, 0.4],
             ...        [0.1, 0.3]]
-            >>> child_tpms = [tpm]
-            >>> marbl = Marbl(tpm, child_tpms)
+            >>> augmented_child_tpms = [[0, tpm]]
+            >>> marbl = Marbl(tpm, augmented_child_tpms)
             >>> marbls = MarblSet([marbl]*2)
             >>> marbls.pack()
-            b'\\x92\\x92\\x92\\x92\\xcb?\\xd3333333\\xcb?\\xb9\\x99\\x99\\x99\\x99\\x99\\x9a\\x92\\xcb?\\xd9\\x99\\x99\\x99\\x99\\x99\\x9a\\xcb?\\xd3333333\\x91\\x92\\x92\\xcb?\\xd3333333\\xcb?\\xb9\\x99\\x99\\x99\\x99\\x99\\x9a\\x92\\xcb?\\xd9\\x99\\x99\\x99\\x99\\x99\\x9a\\xcb?\\xd3333333\\x92\\x92\\x92\\xcb?\\xd3333333\\xcb?\\xb9\\x99\\x99\\x99\\x99\\x99\\x9a\\x92\\xcb?\\xd9\\x99\\x99\\x99\\x99\\x99\\x9a\\xcb?\\xd3333333\\x91\\x92\\x92\\xcb?\\xd3333333\\xcb?\\xb9\\x99\\x99\\x99\\x99\\x99\\x9a\\x92\\xcb?\\xd9\\x99\\x99\\x99\\x99\\x99\\x9a\\xcb?\\xd3333333'
+            b'\\x92\\x92\\x92\\x92\\xcb?\\xd3333333\\xcb?\\xb9\\x99\\x99\\x99\\x99\\x99\\x9a\\x92\\xcb?\\xd9\\x99\\x99\\x99\\x99\\x99\\x9a\\xcb?\\xd3333333\\x91\\x92\\x01\\x92\\x92\\xcb?\\xd3333333\\xcb?\\xb9\\x99\\x99\\x99\\x99\\x99\\x9a\\x92\\xcb?\\xd9\\x99\\x99\\x99\\x99\\x99\\x9a\\xcb?\\xd3333333\\x92\\x92\\x92\\xcb?\\xd3333333\\xcb?\\xb9\\x99\\x99\\x99\\x99\\x99\\x9a\\x92\\xcb?\\xd9\\x99\\x99\\x99\\x99\\x99\\x9a\\xcb?\\xd3333333\\x91\\x92\\x01\\x92\\x92\\xcb?\\xd3333333\\xcb?\\xb9\\x99\\x99\\x99\\x99\\x99\\x9a\\x92\\xcb?\\xd9\\x99\\x99\\x99\\x99\\x99\\x9a\\xcb?\\xd3333333'
         """
         return msgpack.packb(self._list)
 
@@ -255,7 +296,8 @@ def unpack_set(packed_marbls):
         ...         [0.1, 0.3]],
         ...        [[0.4, 0.5],
         ...         [0.3, 0.1]]]
-        >>> marbl = Marbl(tpm, [tpm, tpm])
+        >>> augmented_child_tpms = [[0, tpm], [1, tpm]]
+        >>> marbl = Marbl(tpm, augmented_child_tpms)
         >>> marbls = MarblSet([marbl]*3)
         >>> marbls == unpack_set(pack(marbls))
         True
@@ -269,14 +311,24 @@ def pack(obj):
     return obj.pack()
 
 
-def normalize_tpm(tpm):
-    """Return the normal form of a TPM.
+def normalize_tpm(tpm, track_parent_index=None):
+    """Return the normal form of a TPM. Optionally, also return the new
+    dimension index of a particular parent in the normalized TPM.
 
     The TPM should be ``p``-dimensional, where ``p`` is the number of parents.
     For example, with three parents, ``TPM[0][1][0]`` should give the
     transition probability if the state of the parents is ``(0,1,0)``.
 
-    Example:
+    Args:
+        tpm (list): The child TPM to be normalized.
+
+    Keyword Args:
+        track_parent_index (int): The zero-based index of the dimension
+            corresponding to the covered node in the un-normalized child TPM.
+            If this is not ``None``, an normalized augmented child TPM will be
+            returned instead of just a normalized TPM.
+
+    Examples:
         >>> tpm = [[[0.3, 0.4],
         ...         [0.1, 0.3]],
         ...        [[0.4, 0.5],
@@ -287,6 +339,12 @@ def normalize_tpm(tpm):
         ...                [0.5, 0.1]]]
         >>> normalize_tpm(tpm) == normalize_tpm(equivalent)
         True
+        >>> answer = [2, [[[0.3, 0.1],
+        ...                [0.4, 0.3]],
+        ...               [[0.4, 0.3],
+        ...                [0.5, 0.1]]]]
+        >>> normalize_tpm(tpm, track_parent_index=1) == answer
+        True
     """
     # Convert to a NumPy float array
     tpm = np.array(tpm).astype(float)
@@ -295,10 +353,24 @@ def normalize_tpm(tpm):
     p_permutations = tuple(permutations(range(tpm.ndim)))
     # Get a list containing permuted TPMs, back in list form.
     tpm_permutations = [np.transpose(tpm, p).tolist() for p in p_permutations]
-    # In-place lexicographic sort of the TPM permutations.
-    tpm_permutations.sort()
-    # Return the lexicographically least TPM permutation.
-    return tpm_permutations[0]
+    # Lexicographic sort of the TPM permutations.
+    sorted_permutations = sorted(tpm_permutations)
+    # Immediately return the lexicographically least TPM permutation if we're
+    # not keeping track of a parent node, otherwise find the parent node's new
+    # index and return it with the minimal permutation.
+    normal_tpm = sorted_permutations[0]
+    if track_parent_index is None:
+        return normal_tpm
+    else:
+        # Find the indices of the permuations that could yeild the normal form.
+        valid_permutations = [perm for i, perm in enumerate(p_permutations) if
+                              normal_tpm == tpm_permutations[i]]
+        # The canonical new parent index is the image under the
+        # lexicographically least the valid permutations
+        minimal_valid_permutation = sorted(valid_permutations)[0]
+        new_parent_index = minimal_valid_permutation[track_parent_index]
+        # Return the new parent index with the normalized TPM
+        return [new_parent_index, normal_tpm]
 
 
 __title__ = 'marbl'
