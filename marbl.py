@@ -18,8 +18,8 @@ Marbl-Python is an implementation of the `Marbl specification
 <https://github.com/wmayner/marbl>`_ for normalized representations of Markov
 blankets in Bayesian networks.
 
-It provides objects and methods for serializing and hashing **Marbls** (Markov
-blankets normalized per the Marbl spec), and unordered collections of them.
+It provides objects and methods for normalizing, serializing and hashing
+**Marbls** (Markov blankets), and unordered collections of them.
 
 
 Usage
@@ -33,11 +33,12 @@ NumPy array and Python list form).
 
 Normalization
 ``````````````
-A :class:`Marbl` represents the normal form of a Markov blanket. Its TPMs are
-normalized upon initialization.
+A :class:`Marbl` represents the a Markov blanket. By default, its TPMs are
+normalized upon initialization. This can be overridden by explicitly setting
+the ``normalize`` flag to ``False``.
 
-A :class:`MarblSet` is similarly used to represent the normal form of an
-unordered collection of Marbls.
+A :class:`MarblSet` is similarly used to represent an unordered collection of
+Marbls.
 
 If you need to get the normal form of a single TPM, rather than an entire
 Markov blanket, use :func:`normalize_tpm`.
@@ -70,22 +71,22 @@ import msgpack
 @functools.total_ordering
 class Marbl():
 
-    """A Markov blanket in normal form.
+    """A Markov blanket, in normal form by default.
 
     Provides methods for serialization and hashing.
 
     Attributes:
-        node_tpm (list): The normal form of the covered node's
-            ``p``-dimensional transition probability matrix (where ``p`` is the
-            number of the node's parents).
-        augmented_child_tpms (list): The normalized augmented child tpms. A
-            normalized augmented child TPM contains the index of the dimension
-            corresponding to the covered node in the child's normalized TPM,
-            and the normalized TPM itself.
+        node_tpm (list): The covered node's ``p``-dimensional transition
+            probability matrix (where ``p`` is the number of the node's
+            parents), normalized by default.
+        augmented_child_tpms (list): The augmented child tpms, normalized by
+            default. A normalized augmented child TPM contains the index of the
+            dimension corresponding to the covered node in the child's
+            normalized TPM, and the normalized TPM itself.
     """
 
     def __init__(self, node_tpm, augmented_child_tpms, normalize=True):
-        """Marbls are rendered into normal form upon initialization.
+        """Marbls are rendered into normal form upon initialization by default.
 
         Args:
             node_tpm (list): The un-normalized node's TPM.
@@ -98,9 +99,9 @@ class Marbl():
                 normalized. Defaults to ``True``.
 
         Warning:
-            Incorrect use of the ``normalize`` flag can cause hashes
-            to differ when they shouldn't. Make sure you really don't want the
-            normal form if you pass ``False``.
+            Incorrect use of the ``normalize`` flag can cause hashes to differ
+            when they shouldn't. Make sure you really don't want the normal
+            form if you pass ``False``.
 
         Examples:
             >>> tpm = [[[0.3, 0.4],
@@ -154,7 +155,8 @@ class Marbl():
 
         If two Marbls have the same hash, they are equivalent up to rearranging
         the labels of the covered node's parents and the covered node's
-        children's parents.
+        children's parents, as long as they were both normalized upon
+        initialization.
 
         Example:
             >>> tpm = [[[0.3, 0.4],
@@ -213,8 +215,8 @@ def unpack(packed_marbl):
 class MarblSet(collections.abc.Set):
 
     """
-    An immutable, normalized, unordered collection of **not necessarily
-    unique** Markov blankets.
+    An immutable, unordered collection of **not necessarily unique** Markov
+    blankets, normalized by default.
 
     Provides methods for serialization and hashing.
     """
@@ -226,12 +228,12 @@ class MarblSet(collections.abc.Set):
 
         Keyword Args:
             normalize (bool): Flag to indicate whether TPMs should be
-                normalized. Defaults to ``False``.
+                normalized. Defaults to ``True``.
 
         Warning:
-            Incorrect use of the ``normalize`` flag can cause hashes
-            to differ when they shouldn't. Make sure you really don't want the
-            normal form if you pass ``False``.
+            Incorrect use of the ``normalize`` flag can cause hashes to differ
+            when they shouldn't. Make sure you really don't want the normal
+            form if you pass ``False``.
         """
         # The underlying representation is a list of Marbl TPMS ordered
         # lexicographically, per the Marbl spec.
