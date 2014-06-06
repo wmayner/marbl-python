@@ -84,8 +84,7 @@ class Marbl():
             and the normalized TPM itself.
     """
 
-    def __init__(self, node_tpm, augmented_child_tpms,
-                 already_normalized=False):
+    def __init__(self, node_tpm, augmented_child_tpms, normalize=True):
         """Marbls are rendered into normal form upon initialization.
 
         Args:
@@ -95,13 +94,13 @@ class Marbl():
                 the child's TPM, and the TPM itself.
 
         Keyword Args:
-            already_normalized (bool): Flag to indicate TPMs have already been
-                normalized. Defaults to ``False``.
+            normalize (bool): Flag to indicate whether TPMs should be
+                normalized. Defaults to ``True``.
 
         Warning:
-            Incorrect use of the ``already_normalized`` flag can cause hashes
-            to differ when they shouldn't. Make sure everything really is
-            already normalized.
+            Incorrect use of the ``normalize`` flag can cause hashes
+            to differ when they shouldn't. Make sure you really don't want the
+            normal form if you pass ``False``.
 
         Examples:
             >>> tpm = [[[0.3, 0.4],
@@ -126,7 +125,7 @@ class Marbl():
         augmented_child_tpms = list(augmented_child_tpms)
         # The underlying representation is the covered node's normalized TPM
         # followed by the normalized TPMs of its children, per the Marbl spec.
-        if already_normalized:
+        if not normalize:
             self._list = [node_tpm, augmented_child_tpms]
         else:
             self._list = [
@@ -207,8 +206,8 @@ def unpack(packed_marbl):
         True
     """
     unpacked = msgpack.unpackb(packed_marbl)
-    # Don't normalize, since if it was packed it must already be normalized
-    return Marbl(unpacked[0], unpacked[1], already_normalized=True)
+    # Don't normalize when unpacking, since it must already be normalized.
+    return Marbl(unpacked[0], unpacked[1], normalize=False)
 
 
 class MarblSet(collections.abc.Set):
@@ -220,19 +219,19 @@ class MarblSet(collections.abc.Set):
     Provides methods for serialization and hashing.
     """
 
-    def __init__(self, marbls, already_normalized=False):
+    def __init__(self, marbls, normalize=True):
         """
         Args:
             marbls (Iterable): The Marbls to include in the set.
 
         Keyword Args:
-            already_normalized (bool): Flag to indicate TPMs have already been
+            normalize (bool): Flag to indicate whether TPMs should be
                 normalized. Defaults to ``False``.
 
         Warning:
-            Incorrect use of the ``already_normalized`` flag can cause hashes
-            to differ when they shouldn't. Make sure everything really is
-            already normalized.
+            Incorrect use of the ``normalize`` flag can cause hashes
+            to differ when they shouldn't. Make sure you really don't want the
+            normal form if you pass ``False``.
         """
         # The underlying representation is a list of Marbl TPMS ordered
         # lexicographically, per the Marbl spec.
@@ -302,8 +301,10 @@ def unpack_set(packed_marbls):
         >>> marbls == unpack_set(pack(marbls))
         True
     """
-    return MarblSet([Marbl(m[0], m[1], already_normalized=True) for m in
-                     msgpack.unpackb(packed_marbls)], already_normalized=True)
+    # Don't normalize the MarblSet when unpacking, since it must already be
+    # normalized.
+    return MarblSet([Marbl(m[0], m[1], normalize=False) for m in
+                     msgpack.unpackb(packed_marbls)], normalize=False)
 
 
 def pack(obj):
@@ -374,7 +375,7 @@ def normalize_tpm(tpm, track_parent_index=None):
 
 
 __title__ = 'marbl'
-__version__ = '1.0.0'
+__version__ = '2.0.0'
 __description__ = ('An implementation of the Marbl specification for '
                    'normalized representations of Markov blankets in Bayesian '
                    'networks.')
