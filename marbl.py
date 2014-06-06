@@ -122,17 +122,29 @@ class Marbl():
             >>> marbl1 == marbl2
             False
         """
-        # Cast Iterable to list
-        augmented_child_tpms = list(augmented_child_tpms)
-        # The underlying representation is the covered node's normalized TPM
-        # followed by the normalized TPMs of its children, per the Marbl spec.
+        # Get the underlying representation.
         if not normalize:
-            self._list = [node_tpm, augmented_child_tpms]
+            # Cast the TPMs to lists, but don't normalize them.
+            self._list = [
+                list(node_tpm),
+                [
+                    [
+                        covered_node_index,
+                        list(tpm),
+                    ] for covered_node_index, tpm in augmented_child_tpms
+                ]
+            ]
         else:
+            # Normalize the TPMs (implies standardizing them).
             self._list = [
                 normalize_tpm(node_tpm),
-                [normalize_tpm(tpm, track_parent_index=covered_node_index) for
-                 covered_node_index, tpm in augmented_child_tpms]
+                [
+                    [
+                        covered_node_index,
+                        normalize_tpm(tpm,
+                                      track_parent_index=covered_node_index)
+                    ] for covered_node_index, tpm in augmented_child_tpms
+                ]
             ]
 
     @property
@@ -377,7 +389,7 @@ def normalize_tpm(tpm, track_parent_index=None):
 
 
 __title__ = 'marbl'
-__version__ = '2.0.1'
+__version__ = '2.0.2'
 __description__ = ('An implementation of the Marbl specification for '
                    'normalized representations of Markov blankets in Bayesian '
                    'networks.')
