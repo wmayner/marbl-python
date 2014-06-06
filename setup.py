@@ -24,7 +24,7 @@ tests_require = [
 
 setup(
     name="marbl-python",
-    version='1.0.0',
+    version='2.0.0',
     description=('A Python implementation of the Marbl specification for '
                  'normalized representations of Markov blankets in Bayesian '
                  'networks.'),
