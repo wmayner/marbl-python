@@ -68,6 +68,17 @@ import hashlib
 import msgpack
 
 
+def _standardize(tpm):
+    if isinstance(tpm, np.ndarray):
+        return tpm.tolist()
+    return tpm
+
+
+def _standardize_augmented(aug_tpm):
+    covered_node_index, tpm = aug_tpm
+    return [covered_node_index, _standardize(tpm)]
+
+
 @functools.total_ordering
 class Marbl():
 
@@ -104,10 +115,11 @@ class Marbl():
             form if you pass ``False``.
 
         Examples:
-            >>> tpm = [[[0.3, 0.4],
+            >>> tpm = np.array(
+            ...       [[[0.3, 0.4],
             ...         [0.1, 0.3]],
             ...        [[0.4, 0.5],
-            ...         [0.3, 0.1]]]
+            ...         [0.3, 0.1]]])
             >>> tpm2 = [[[0.3, 0.1],
             ...          [0.4, 0.3]],
             ...         [[0.4, 0.3],
@@ -121,29 +133,28 @@ class Marbl():
             >>> marbl2 = Marbl(tpm, augmented_child_tpms2)
             >>> marbl1 == marbl2
             False
+            >>> unnormalized = Marbl(tpm, augmented_child_tpms,
+            ...                      normalize=False)
+            >>> unnormalized == marbl1
+            False
         """
         # Get the underlying representation.
         if not normalize:
             # Cast the TPMs to lists, but don't normalize them.
             self._list = [
-                list(node_tpm),
+                _standardize(node_tpm),
                 [
-                    [
-                        covered_node_index,
-                        list(tpm),
-                    ] for covered_node_index, tpm in augmented_child_tpms
+                    _standardize_augmented(aug_tpm)
+                    for aug_tpm in augmented_child_tpms
                 ]
             ]
         else:
-            # Normalize the TPMs (implies standardizing them).
+            # Normalize the TPMs.
             self._list = [
                 normalize_tpm(node_tpm),
                 [
-                    [
-                        covered_node_index,
-                        normalize_tpm(tpm,
-                                      track_parent_index=covered_node_index)
-                    ] for covered_node_index, tpm in augmented_child_tpms
+                    normalize_tpm(tpm, track_parent_index=covered_node_index)
+                    for covered_node_index, tpm in augmented_child_tpms
                 ]
             ]
 
