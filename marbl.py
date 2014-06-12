@@ -258,10 +258,13 @@ class MarblSet(collections.abc.Set):
             when they shouldn't. Make sure you really don't want the normal
             form if you pass ``False``.
         """
-        # The underlying representation is a list of Marbl TPMS ordered
-        # lexicographically, per the Marbl spec.
         self.marbls = list(marbls)
-        self._list = [b._list for b in sorted(self.marbls)]
+        # The underlying representation is a list of Marbl TPMs ordered
+        # lexicographically, per the Marbl spec. The permutation that recovers
+        # the original ordering of marbls is also stored.
+        L = [(self.marbls[i]._list, i) for i in range(len(self.marbls))]
+        L.sort()
+        self._list, self.permutation = zip(*L)
 
     def __contains__(self, x):
         return x in self.marbls
