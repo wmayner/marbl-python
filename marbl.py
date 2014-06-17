@@ -239,24 +239,15 @@ class MarblSet(collections.abc.Set):
 
     """
     An immutable, unordered collection of **not necessarily unique** Markov
-    blankets, normalized by default.
+    blankets.
 
     Provides methods for serialization and hashing.
     """
 
-    def __init__(self, marbls, normalize=True):
+    def __init__(self, marbls):
         """
         Args:
             marbls (Iterable): The Marbls to include in the set.
-
-        Keyword Args:
-            normalize (bool): Flag to indicate whether TPMs should be
-                normalized. Defaults to ``True``.
-
-        Warning:
-            Incorrect use of the ``normalize`` flag can cause hashes to differ
-            when they shouldn't. Make sure you really don't want the normal
-            form if you pass ``False``.
         """
         self.marbls = list(marbls)
         # The underlying representation is a list of Marbl TPMs ordered
@@ -332,7 +323,7 @@ def unpack_set(packed_marbls):
     # Don't normalize the MarblSet when unpacking, since it must already be
     # normalized.
     return MarblSet([Marbl(m[0], m[1], normalize=False) for m in
-                     msgpack.unpackb(packed_marbls)], normalize=False)
+                     msgpack.unpackb(packed_marbls)])
 
 
 def pack(obj):
