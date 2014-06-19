@@ -23,7 +23,7 @@ To install the latest development version:
 
 .. code:: bash
 
-    pip install "git+https://github.com/wmayner/marbl-python@develop#egg=cyphi"
+    pip install "git+https://github.com/wmayner/marbl-python@develop#egg=marbl-python"
 
 
 Usage

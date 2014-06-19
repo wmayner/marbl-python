@@ -62,10 +62,68 @@ API
 
 from itertools import permutations
 import collections.abc
+from collections import Iterable
 import functools
 import numpy as np
 import hashlib
 import msgpack
+
+
+def _standardize(tpm):
+    if isinstance(tpm, np.ndarray):
+        return tpm.tolist()
+    return tpm
+
+
+def _standardize_augmented(aug_tpm):
+    covered_node_index, tpm = aug_tpm
+    return [covered_node_index, _standardize(tpm)]
+
+
+class _LexList(list):
+
+    """A list that allows for comparison to non-Iterables.
+
+    An instance of this class is always considered larger than a non-Iterable.
+
+    Example:
+        >>> l = _LexList([0, 1, 2])
+        >>> l < 3
+        False
+        >>> l > 3
+        True
+    """
+
+    def __lt__(self, other):
+        if not isinstance(other, Iterable):
+            return False
+        else:
+            return super(_LexList, self).__lt__(other)
+
+    def __gt__(self, other):
+        if not isinstance(other, Iterable):
+            return True
+        else:
+            return super(_LexList, self).__gt__(other)
+
+    def __le__(self, other):
+        if not isinstance(other, Iterable):
+            return False
+        else:
+            return super(_LexList, self).__le__(other)
+
+    def __ge__(self, other):
+        if not isinstance(other, Iterable):
+            return True
+        else:
+            return super(_LexList, self).__ge__(other)
+
+
+def _lexify(iterable):
+    """Recursively convert a nested iterables to nested _LexLists."""
+    if not isinstance(iterable, Iterable):
+        return iterable
+    return _LexList(_lexify(item) for item in iterable)
 
 
 @functools.total_ordering
@@ -104,10 +162,11 @@ class Marbl():
             form if you pass ``False``.
 
         Examples:
-            >>> tpm = [[[0.3, 0.4],
+            >>> tpm = np.array(
+            ...       [[[0.3, 0.4],
             ...         [0.1, 0.3]],
             ...        [[0.4, 0.5],
-            ...         [0.3, 0.1]]]
+            ...         [0.3, 0.1]]])
             >>> tpm2 = [[[0.3, 0.1],
             ...          [0.4, 0.3]],
             ...         [[0.4, 0.3],
@@ -121,31 +180,30 @@ class Marbl():
             >>> marbl2 = Marbl(tpm, augmented_child_tpms2)
             >>> marbl1 == marbl2
             False
+            >>> unnormalized = Marbl(tpm, augmented_child_tpms,
+            ...                      normalize=False)
+            >>> unnormalized == marbl1
+            False
         """
         # Get the underlying representation.
         if not normalize:
             # Cast the TPMs to lists, but don't normalize them.
-            self._list = [
-                list(node_tpm),
+            self._list = _lexify([
+                _standardize(node_tpm),
                 [
-                    [
-                        covered_node_index,
-                        list(tpm),
-                    ] for covered_node_index, tpm in augmented_child_tpms
+                    _standardize_augmented(aug_tpm)
+                    for aug_tpm in augmented_child_tpms
                 ]
-            ]
+            ])
         else:
-            # Normalize the TPMs (implies standardizing them).
-            self._list = [
+            # Normalize the TPMs.
+            self._list = _lexify([
                 normalize_tpm(node_tpm),
                 [
-                    [
-                        covered_node_index,
-                        normalize_tpm(tpm,
-                                      track_parent_index=covered_node_index)
-                    ] for covered_node_index, tpm in augmented_child_tpms
+                    normalize_tpm(tpm, track_parent_index=covered_node_index)
+                    for covered_node_index, tpm in augmented_child_tpms
                 ]
-            ]
+            ])
 
     @property
     def node_tpm(self):
@@ -228,29 +286,23 @@ class MarblSet(collections.abc.Set):
 
     """
     An immutable, unordered collection of **not necessarily unique** Markov
-    blankets, normalized by default.
+    blankets.
 
     Provides methods for serialization and hashing.
     """
 
-    def __init__(self, marbls, normalize=True):
+    def __init__(self, marbls):
         """
         Args:
             marbls (Iterable): The Marbls to include in the set.
-
-        Keyword Args:
-            normalize (bool): Flag to indicate whether TPMs should be
-                normalized. Defaults to ``True``.
-
-        Warning:
-            Incorrect use of the ``normalize`` flag can cause hashes to differ
-            when they shouldn't. Make sure you really don't want the normal
-            form if you pass ``False``.
         """
-        # The underlying representation is a list of Marbl TPMS ordered
-        # lexicographically, per the Marbl spec.
         self.marbls = list(marbls)
-        self._list = [b._list for b in sorted(self.marbls)]
+        # The underlying representation is a list of Marbl TPMs ordered
+        # lexicographically, per the Marbl spec. The permutation that recovers
+        # the original ordering of marbls is also stored.
+        L = [(self.marbls[i]._list, i) for i in range(len(self.marbls))]
+        L.sort()
+        self._list, self.permutation = zip(*L)
 
     def __contains__(self, x):
         return x in self.marbls
@@ -318,7 +370,7 @@ def unpack_set(packed_marbls):
     # Don't normalize the MarblSet when unpacking, since it must already be
     # normalized.
     return MarblSet([Marbl(m[0], m[1], normalize=False) for m in
-                     msgpack.unpackb(packed_marbls)], normalize=False)
+                     msgpack.unpackb(packed_marbls)])
 
 
 def pack(obj):
@@ -389,7 +441,7 @@ def normalize_tpm(tpm, track_parent_index=None):
 
 
 __title__ = 'marbl'
-__version__ = '2.0.2'
+__version__ = '2.0.3'
 __description__ = ('An implementation of the Marbl specification for '
                    'normalized representations of Markov blankets in Bayesian '
                    'networks.')
