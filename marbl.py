@@ -62,6 +62,7 @@ API
 
 from itertools import permutations
 import collections.abc
+from collections import Iterable
 import functools
 import numpy as np
 import hashlib
@@ -77,6 +78,52 @@ def _standardize(tpm):
 def _standardize_augmented(aug_tpm):
     covered_node_index, tpm = aug_tpm
     return [covered_node_index, _standardize(tpm)]
+
+
+class _LexList(list):
+
+    """A list that allows for comparison to non-Iterables.
+
+    An instance of this class is always considered larger than a non-Iterable.
+
+    Example:
+        >>> l = _LexList([0, 1, 2])
+        >>> l < 3
+        False
+        >>> l > 3
+        True
+    """
+
+    def __lt__(self, other):
+        if not isinstance(other, Iterable):
+            return False
+        else:
+            return super(_LexList, self).__lt__(other)
+
+    def __gt__(self, other):
+        if not isinstance(other, Iterable):
+            return True
+        else:
+            return super(_LexList, self).__gt__(other)
+
+    def __le__(self, other):
+        if not isinstance(other, Iterable):
+            return False
+        else:
+            return super(_LexList, self).__le__(other)
+
+    def __ge__(self, other):
+        if not isinstance(other, Iterable):
+            return True
+        else:
+            return super(_LexList, self).__ge__(other)
+
+
+def _lexify(iterable):
+    """Recursively convert a nested iterables to nested _LexLists."""
+    if not isinstance(iterable, Iterable):
+        return iterable
+    return _LexList(_lexify(item) for item in iterable)
 
 
 @functools.total_ordering
@@ -141,22 +188,22 @@ class Marbl():
         # Get the underlying representation.
         if not normalize:
             # Cast the TPMs to lists, but don't normalize them.
-            self._list = [
+            self._list = _lexify([
                 _standardize(node_tpm),
                 [
                     _standardize_augmented(aug_tpm)
                     for aug_tpm in augmented_child_tpms
                 ]
-            ]
+            ])
         else:
             # Normalize the TPMs.
-            self._list = [
+            self._list = _lexify([
                 normalize_tpm(node_tpm),
                 [
                     normalize_tpm(tpm, track_parent_index=covered_node_index)
                     for covered_node_index, tpm in augmented_child_tpms
                 ]
-            ]
+            ])
 
     @property
     def node_tpm(self):
