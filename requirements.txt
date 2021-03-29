@@ -14,6 +14,6 @@ sphinx-rtd-theme==0.1.6
 ## Nested dependencies
 Jinja2==2.7.2
 MarkupSafe==0.23
-Pygments==1.6
+Pygments==2.7.4
 docutils==0.11
 py==1.4.20
